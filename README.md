@@ -1,4 +1,8 @@
-TODO: 
+# Note:  I have not taken this exam yet so there's absolutly nothing in this document that has anything to do with the exam.  I am bound by a non-disclosure agreement so plase don't ask me anything about the exam.
+
+
+TODO:  man page that shows how to initiate crash
+       man page that has password,keyboard-interactive for SSH
 
 
 # Chapter 1:  Using the Scientific Method
@@ -387,14 +391,42 @@ check security of nfs in /etc/exports.d
 check KRB5 ticket for service nfs-secure
 
 
+# Dealing with Securitiy Issues
+
+ssh -o PreferredAuthentications=keyboard-interactive,password # Forces the use of password instead of SSH keys.
+
+
+kinit <user>  # get a TGT for the <user>
+
+check /etc/krb5.conf and /etc/sssd/sssd.conf for configuration issues.
+
+
+exportfs # checks NFS exports
+         # check /etc/exports and /etc/exports.d/
+
+
 # Troubleshooting Kernel Issues
 ## Kernel Crash Dumps
 
+kdump installed by default
+
+systemctl enable kdump
+systemctl start kdump
 
 Configure kdump
+ # ensure you have the correct core collector uncommented when using SSH copy
+kdumpctl propagate
 restart kdump
 
 echo 1 > /proc/sys/kernel/sysrq
 echo c > /proc/sysrq-trigger  (triggers a crash)
 
 core_collector makedump file
+
+## Kernel Debugging With SystemTap 
+
+you need kernel-debuginfo and kernel-devel packages installed to use system tap.
+man stap | grep debug   # gives you hint to the 'stap-prep' program that installs everything it needs.
+
+
+non-root users must be in stapusr or stapdev group  (man stap | grep group)

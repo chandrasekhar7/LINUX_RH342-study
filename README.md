@@ -1,8 +1,20 @@
-# Note:  I have not taken this exam yet so there's absolutly nothing in this document that has anything to do with the exam.  I am bound by a non-disclosure agreement so plase don't ask me anything about the exam.
+# Note:  I have not taken this exam yet so there's absolutely nothing in this document that has anything to do with the exam.  I am bound by a non-disclosure agreement so please don't ask me anything about the exam.
+
+
+# Things to Remember:
+
+Ensure services are set to restart on reboot.
+Check those SELinux labels!  Ensure SELinux booleans are set permanently with "-P".
+Ensure the firewall rules are permanant and firewalld is set to restart on reboot (if applicable).
+
 
 
 TODO:  man page that shows how to initiate crash
        man page that has password,keyboard-interactive for SSH
+
+Things I don't have a full grasp on:
+
+aide, stap, pcp, pmlogger, pmval
 
 
 # Chapter 1:  Using the Scientific Method
@@ -58,17 +70,27 @@ https://access.redhat.com/labs/
 # Chapter 2:  Being Proactive
 
 
-    yum -y install cockpit
+    yum -y install cockpit # The web interface for pcp
     yum -y install pcp; systemctl enable pmcd; systemctl start pmcd
+    yum -y install pcp-doc # man pages
     (rpm -qil pcp | grep systemd gives hints to the service name)
     firewall-cmd --add-service=cockpit --permanent
 
-When copying log files to another system, ensure you also copy the .meta files.
+Use 'man pmval' or 'man pcp' to find the PCPIntro man page reference.
 
 
+When copying log files to another system, ensure you also copy the .meta files from /var/log/pcp......
+
+It's a good idea to do 'rpm -qil <package> | grep systemd' to see if there are other processes that should be set to start on reboot.  I'm looking at you, PCP!
+
+
+pminfo   # Shows kernel metrics available
+pminfo -dt disk.md.avg_qlen # 
+
+Then use: 'pmval <metric name>'
 pmlogger
 pmatop
-pmstat
+pmstat -s 5 # 5 samples.  pmstat -h (there is no man page)
 pmval -a <log file> kernel.all.load -T 1minute
 
 ## Remote Logging
@@ -80,13 +102,15 @@ TCP and UDP server run settings are already in the /etc/rsyslog.conf file but ma
 
 Ensure firewall is open for TCP or UDP or both.
 
+Rsyslog man pages do NOT do a good job of showing how to create templates and macros.  Install rsyslog-dc package and use a web broswer to peruse /usr/share/doc/rsyslog-8.24.0/html/index.html and then go to "Navigation -> Index -> Action" and then search for "?".
 
 Templates:  
 
 $template DynamicFile,"/var/log/loghost/%HOSTNAME%/cron.log"
-cron.* ?DynamicFile
+cron.* ?DynamicFile  # log cron messages and do NOT flush cache on each message.
+cron.* -?DynamicFile  # log cron messages and DO flush cache on each message.
 
-The DynamicFile is just any name for the template.  You must reference the template by prepending ?
+The DynamicFile is just any name for the template.  You must reference the template by prepending ?  This is not in any man page but it's in the rsyslog.doc configuration.html file.
 
 ## Being Proactive
 
@@ -227,6 +251,8 @@ dmsetup ls
 
 When xfs_repair-ing a file system, pay attention to the XFS errors.  If you have a corrupted file (that ends up in lost+found), look for the parent directory inode number.  Then:  find . -inum <number> to find the inode number of the directory that contains the lost+found file.  Then deduce what file belongs there.
 
+dumpe2fs <block device> | grep superbl
+e2fsck -n -b <superblock> <block device>
 
 ## Recovering from LVM accidents
 
@@ -265,12 +291,35 @@ echo -n <password> > /root/luks_key; chmod 400 /root/luks_key
 
 ## Troubleshooting iSCSI Storage Issues
 
+The target is something to attach to...something to login to.  That target can be one or more disks.  Inside a target is LUNs.
+A target can present more than on LUN/disk.
+
+After logging in to a target, use "lsblk" to show the new LUNs/disks.
+
+Discovery is the process of going to the server to find what the targets are configured.  Restrictions can be in place to show only targets for a particular host (by IP address in an ACL)
+
+Ensure the IQN i n/etc/iscsi/initiaatorname.isci is setup up properly and that same IQN needs to be used when setting up ACLs on the target.
+
+Any change to iscsid.conf:  restart iscsi service.
+
+CHAP protocol:  Password authentication for target connection.  By default, RH iscsi uses no authentication.  CHAP must be configured on the target and initiatior.  Authentication settings are in /etc/iscsi/iscsid.conf.  For one-way authentication, use 'username' and 'password' credentials.  For two-way authentication, use 'username_in' and 'password_in'.
+
+discovery.sendtargets.auth.authmethod = CHAP
+discovery.sendtargets.auth.username = <username>
+discovery.sendtargets.auth.password = <password>
+
+
 man iscsiadm | grep iscsiadm | grep discover
 man iscsiadm | grep iscsiadm | grep login
 
-iscsiadm -m node
+iscsiadm -m node -d8 # debug 8 is required to see authentication info
 
-iscsiadm -m node -o delete -T <iqdn>
+iscsiadm -m node -u # Unlogin
+iscsiadm -m node -T <iqdn> -o delete # delete client side cache/information
+
+iscsiadm --mode node --logoutall=all
+
+Connection information/parameters are in /var/lib/iscsi/nodes (session information)
 
 # Troubleshooting RPM Issues
 
@@ -292,23 +341,13 @@ rpmdb_dump
 
 rpmdb_verify
 
-rpm -v --rebuilddb
-
-rm /var/lib/rpm/__db.*
-
-cd /var/lib/rpm
-
-/usr/lib/rpm/rpmdb_verify Packages
-
-mv Packages Packages.broken
-
-/usr/lib/rpm/rpmdb_dump Packages.broken | /usr/lib/rpm/
-
-rpmdb_load Packages
-
-rpm -qa > /dev/null # shows errors in process
-
-rpm --rebuilddb
+    cd /var/lib/rpm
+    rm /var/lib/rpm/__db.*
+    /usr/lib/rpm/rpmdb_verify Packages
+    mv Packages Packages.broken
+    /usr/lib/rpm/rpmdb_dump Packages.broken | /usr/lib/rpm/rpmdb_load Packages 
+    rpm -qa > /dev/null # shows errors in process
+    rpm --rebuilddb
 
 ## Identifying and Recovering Files that have Changed
 
@@ -333,6 +372,8 @@ nmcli conn
 nmcli conn reload
 
 # Kerberos and LDAP
+
+The authconfig RPM has the cacertdir_rehash binary.
 
 cacertdir_rehash /etc/openldap/cacerts
 
@@ -374,18 +415,48 @@ auditd
 
 audit2allow
 
-
-
 journalctl -u vsftpd.service
 
+Check /etc/pam.d/ files for changes.  Man pages on (for example) pam_ftp can be helpful.
+
+If no /etc/pam.d/<servicname> is found, then /etc/pam.d/other file is used to determine authentication.
+
+
+Recommended to do authconfig --savebackup <name> before making any changes.
+
+PAM errors are logged to /var/log/secure.
+
+
+## Fixing SELinux Issues
+
+semanage fcontext -a -t <type> /path/to/file
+
+restorecon -Rv /path/to/file
+
+semanage boolean --list
+
+setsebool -P # Permanent
+
+getsebool
+
+sesearch --allow -b httpd_can_connect_ldap
+seinfo --portcon=443
+
+
+
+autofs # check man 5 autofs for the auto-home directory syntax
 
 ## Resolving Kerberos and LDAP Issues
 
+
+ssh -o PreferredAuthentications=keyboard-interactive,password  # TAB completion works here!
 
 
 systemctl status nfs-secure
 klist -ek /etc/krb5.keytab
 
+
+Check that nfs-secure has credentials to kerberos destination.
 
 check security of nfs in /etc/exports.d
 check KRB5 ticket for service nfs-secure
@@ -418,6 +489,8 @@ Configure kdump
 kdumpctl propagate
 restart kdump
 
+grep trigger /usr/share/doc/kexec-tools-2.0.15/*
+
 echo 1 > /proc/sys/kernel/sysrq
 echo c > /proc/sysrq-trigger  (triggers a crash)
 
@@ -425,7 +498,9 @@ core_collector makedump file
 
 ## Kernel Debugging With SystemTap 
 
-you need kernel-debuginfo and kernel-devel packages installed to use system tap.
+System Tap:
+
+you need kernel-debuginfo and kernel-devel and system tap dependencies packages installed to use system tap.
 man stap | grep debug   # gives you hint to the 'stap-prep' program that installs everything it needs.
 
 

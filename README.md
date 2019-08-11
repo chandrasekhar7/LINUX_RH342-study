@@ -6,34 +6,33 @@
 Ensure services are set to restart on reboot.
 Check those SELinux labels!  Ensure SELinux booleans are set permanently with "-P".
 Ensure the firewall rules are permanant and firewalld is set to restart on reboot (if applicable).
+If changing systemd scripts, ensure you 'systemctl daemon-reload'.
+Use <TAB> completion whenever possible.
 
-
-
-TODO:  man page that shows how to initiate crash
-       man page that has password,keyboard-interactive for SSH
 
 Things I don't have a full grasp on:
 
-aide, stap, pcp, pmlogger, pmval
+aide, stap, pcp, pmlogger, pmval, valgrind
 
 
 # Chapter 1:  Using the Scientific Method
 
 student can't log in
 
-check:  ssh, 'last log' (lastlog -u student), user shell
-getent passwd studentexit
+check:  ssh, 'last log' (lastlog -u student), user shell, permissions on $HOME
+getent passwd student
+exit
 
 
 ## Collecting Information
 
 journactl -ef (enable and follow)
 journalctl -u sshd.service (just sshd service)
-journalctl -p emerg..err (just syslog priority stuff)
+journalctl -p emerg.err (just syslog priority stuff)
 
 journalctl -b -1 (show messages from last boot)
 
-'man journalctl' will lead you to 'man systemd-journald.service' page that gives you clues on how to make the storage persistent.
+'man journalctl' will lead you to 'man systemd-journald.service' page that gives you clues on how to make the storage persistent for logging.
 
 Instead of manually creating the /var/log/journal directory, one can also change the systemd-journald configuration file:
 
@@ -46,7 +45,6 @@ Raw
     ausearch -i -m avc -ts today (search audit logs for AVC)
 
 redhat-support-tool
-
 
 
     sos-report -l ( list available modules)
@@ -107,8 +105,8 @@ Rsyslog man pages do NOT do a good job of showing how to create templates and ma
 Templates:  
 
 $template DynamicFile,"/var/log/loghost/%HOSTNAME%/cron.log"
-cron.* ?DynamicFile  # log cron messages and do NOT flush cache on each message.
-cron.* -?DynamicFile  # log cron messages and DO flush cache on each message.
+cron.* -?DynamicFile  # cache (do not sync) the log file for each message.
+cron.* ?DynamicFile  # Sync the log file on each message.
 
 The DynamicFile is just any name for the template.  You must reference the template by prepending ?  This is not in any man page but it's in the rsyslog.doc configuration.html file.
 
@@ -120,7 +118,13 @@ yum install -y aide
 
 AIDE needs to be run first when the system is *clean*.  Aide checks changes so if the file is already corrupt, aide won't find it.
 
-auditd rules work on first-match wins.  Order is important.
+`man aide.conf` in SELECTION LINES will show the three selections possible.
+
+
+% aide --init  # move /var/lib/aide/aide.db.new.gz to /var/ilb/aide/aide.db.gz after running this because this is the DB aide uses to compare checks.
+
+
+auditd rules work on first-match wins.  Order is important.  A rule for /etc/ would overwrite a rule for /etc/sysconfig.
 
 use 'man auditd' to get hints to the other audit binaries and auditd.conf syntax.
 
@@ -382,20 +386,20 @@ objdump -p /path/to/so | grep SONAME
 
 ldconfig -p # Gives hints as to where it looks for libraries.
 
-'man valgrind'....you're looking for memory leaks so search for 'leak'
+'man valgrind'....you're looking for memory leaks so search for OPTIONS (in upper case).
 ldd /path/to/binary
 
 valgrind will give you the hint of --leak-check=full when you run it.
 
 valgrind --tool=<toolname>
 
-search for "tool" in man valgrind
+search for "tool" in man valgrind (in upper case)
 
 strace
 
-strace -o /tmp/mytrace -e open,stat mycommand
-
-strace -p <PID>
+strace -o /tmp/mytrace -e open,stat mycommand  # trace only open and stat calls.
+  
+strace -p <PID>  # Trace an already running process at <PID>.
 
 strace -f (follow child processes)
 
@@ -419,7 +423,13 @@ journalctl -u vsftpd.service
 
 Check /etc/pam.d/ files for changes.  Man pages on (for example) pam_ftp can be helpful.
 
-If no /etc/pam.d/<servicname> is found, then /etc/pam.d/other file is used to determine authentication.
+You can "install" rpms to check their configuration files against the files that are already installed.  PAM is cryptic for me, so:
+
+    yumdownloader pam; rpm2cpio pam.rpm | cpio -idmv
+
+Will extract the RPM to the $PWD.  You can inspect the ./etc/pam.d/ files for changes.
+
+PAM uses the name of the running service for lookups to the file in /etc/pam.d.  If the service name is vsftp, then PAM checks /etc/pam.d/vsftpd first.  If no /etc/pam.d/<servicname> is found, then /etc/pam.d/other file is used to determine authentication.
 
 
 Recommended to do authconfig --savebackup <name> before making any changes.
@@ -429,19 +439,13 @@ PAM errors are logged to /var/log/secure.
 
 ## Fixing SELinux Issues
 
-semanage fcontext -a -t <type> /path/to/file
-
-restorecon -Rv /path/to/file
-
-semanage boolean --list
-
-setsebool -P # Permanent
-
-getsebool
-
-sesearch --allow -b httpd_can_connect_ldap
-seinfo --portcon=443
-
+    semanage fcontext -a -t <type> /path/to/file
+    restorecon -Rv /path/to/file
+    semanage boolean --list
+    setsebool -P # Permanent
+    getsebool
+    sesearch --allow -b httpd_can_connect_ldap
+    seinfo --portcon=443
 
 
 autofs # check man 5 autofs for the auto-home directory syntax
@@ -452,13 +456,14 @@ autofs # check man 5 autofs for the auto-home directory syntax
 ssh -o PreferredAuthentications=keyboard-interactive,password  # TAB completion works here!
 
 
-systemctl status nfs-secure
-klist -ek /etc/krb5.keytab
+    systemctl status nfs-secure
+    klist -ek /etc/krb5.keytab
 
 
 Check that nfs-secure has credentials to kerberos destination.
 
 check security of nfs in /etc/exports.d
+
 check KRB5 ticket for service nfs-secure
 
 

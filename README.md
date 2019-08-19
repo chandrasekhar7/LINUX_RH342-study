@@ -84,9 +84,9 @@ Ensure firewall is open for TCP or UDP or both.
 Templates:  
 
 $template DynamicFile,"/var/log/loghost/%HOSTNAME%/cron.log"
-cron.* ?DynamicFile
+cron.* -?DynamicFile
 
-The DynamicFile is just any name for the template.  You must reference the template by prepending ?
+The DynamicFile is just any name for the template.  You must reference the template by prepending ? in a *separate* rsyslog.conf line
 
 ## Being Proactive
 
@@ -203,6 +203,8 @@ Install 'kernel-doc' package for documentation on kernel modules and such.  kern
 
 lsmod
 
+man modprobe.conf | grep options
+
 ll /sys/module
 modinfo -p <module> (shows parameters the module has)
 modprobe -r <module> (unload)
@@ -268,6 +270,7 @@ echo -n <password> > /root/luks_key; chmod 400 /root/luks_key
 man iscsiadm | grep iscsiadm | grep discover
 man iscsiadm | grep iscsiadm | grep login
 
+iscsiadm -m node -T <targetname> | grep authmet
 iscsiadm -m node
 
 iscsiadm -m node -o delete -T <iqdn>
@@ -334,6 +337,7 @@ nmcli conn reload
 
 # Kerberos and LDAP
 
+# This is referenced in SSSD.conf man page:
 cacertdir_rehash /etc/openldap/cacerts
 
 # Troubleshooting Application Issues 
@@ -378,6 +382,8 @@ audit2allow
 
 journalctl -u vsftpd.service
 
+/var/ftp/pub is the "home" directory of public.
+
 
 ## Resolving Kerberos and LDAP Issues
 
@@ -418,6 +424,10 @@ Configure kdump
 kdumpctl propagate
 restart kdump
 
+In the /etc/kdump.conf file, look for the 'corecollector' section.  It references mkdumpfile.  In the man page for mkdumpfile you'll see compression options.
+
+Instal kernel-doc RPM.  In the sysrq.txt file, it explains how to crash the system.
+
 echo 1 > /proc/sys/kernel/sysrq
 echo c > /proc/sysrq-trigger  (triggers a crash)
 
@@ -426,7 +436,23 @@ core_collector makedump file
 ## Kernel Debugging With SystemTap 
 
 you need kernel-debuginfo and kernel-devel packages installed to use system tap.
-man stap | grep debug   # gives you hint to the 'stap-prep' program that installs everything it needs.
+man stap | grep -A 100 ALSO # shows you the 'stap-prep' program that installs everything it needs.
 
+
+stap -v /usr/share/doc/systemtap-client-*/examples/process/syscalls_by_proc.stp
+
+stap -m <modul name you want it called>
 
 non-root users must be in stapusr or stapdev group  (man stap | grep group)
+
+Examples are in /usr/share/doc/systemtap-client-*/examples.  System tap scripts have '.stp' extension.
+
+System tap modules must go into /lib/modules/$(uname -r)/systemtap.  This directory doesn't get created on its own.  You must create it.  See 'man stap | grep /lib/modules'.
+Then use 'staprun <modulename>' 
+users need to be added to stapusr group for running the kernel modules.
+
+# 
+
+
+ldapsearch -x  # Tests TLS
+ldapsearch -x -ZZ  # tests TLS

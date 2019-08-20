@@ -76,6 +76,7 @@ https://access.redhat.com/labs/
 
 Use 'man pmval' or 'man pcp' to find the PCPIntro man page reference.
 
+'pcp' by itself will show you what settings are set.
 
 When copying log files to another system, ensure you also copy the .meta files from /var/log/pcp......
 
@@ -93,6 +94,7 @@ pmval -a <log file> kernel.all.load -T 1minute
 
 ## Remote Logging
 
+Note:  This hint probably wont work on Red Hat (it works on centos) because rsyslog-doc doesn't appear to be part of RHEL.
 install rsyslog-doc so that you can get the stuff that's not in the man pages.  Look in the configuration -> actions section for a few examples.
 
 
@@ -304,7 +306,7 @@ After logging in to a target, use "lsblk" to show the new LUNs/disks.
 
 Discovery is the process of going to the server to find what the targets are configured.  Restrictions can be in place to show only targets for a particular host (by IP address in an ACL)
 
-Ensure the IQN i n/etc/iscsi/initiaatorname.isci is setup up properly and that same IQN needs to be used when setting up ACLs on the target.
+Ensure the IQN in /etc/iscsi/initiaatorname.isci is setup up properly and that same IQN needs to be used when setting up ACLs on the target.
 
 Any change to iscsid.conf:  restart iscsi service.
 
@@ -314,6 +316,8 @@ discovery.sendtargets.auth.authmethod = CHAP
 discovery.sendtargets.auth.username = <username>
 discovery.sendtargets.auth.password = <password>
 
+
+/sbin/iscsi-iname will give you a *hint* at the proper ordering of TLD.domain.host in the /etc/iscsi/initiator.name file.  It won't give you the proper name to use, however.  You'll have to fill in the TLDN.domain.hostname part yourself.
 
 man iscsiadm | grep iscsiadm | grep discover
 man iscsiadm | grep iscsiadm | grep login

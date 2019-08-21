@@ -516,7 +516,10 @@ core_collector makedump file
 
 ## Kernel Debugging With SystemTap 
 
-you need kernel-debuginfo and kernel-devel packages installed to use system tap.
+you need kernel-debuginfo and kernel-devel packages installed to use system tap.  Installing systemtap via yum doesn't satisfy both of these package requirements.  'stap-pre' *does* seem to do the setup properly.
+
+If running stap modules on a different server, make sure the kernel versions match for the module you're building.
+
 man stap | grep -A 100 ALSO # shows you the 'stap-prep' program that installs everything it needs.
 
 
@@ -533,7 +536,10 @@ non-root users must be in stapusr or stapdev group  (man stap | grep group)
 Examples are in /usr/share/doc/systemtap-client-*/examples.  System tap scripts have '.stp' extension.
 
 System tap modules must go into /lib/modules/$(uname -r)/systemtap.  This directory doesn't get created on its own.  You must create it.  See 'man stap | grep /lib/modules'.
-Then use 'staprun <modulename>' 
+Then use 'staprun <modulename>'
+
+staprun will also tell you what directory it's expecting modules.
+use 'staprun <modname>' to run the module 
 users need to be added to stapusr group for running the kernel modules.
 
 # 

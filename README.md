@@ -271,31 +271,37 @@ retain_min
 vgcfgrestore -l <volume group>
 
 ## Dealing with LUKS Issues
-/etc/crypttab  # part of INIT
+/etc/crypttab  # part of INIT, very similar to /etc/fstab
+
 yum -y install cryptsetup
-
-
-  name /dev/vdaN /path/to/key/file
-
-
-Then /etc/fstab
-
-/dev/mapper/name /secret ext4 defaults 0 0 
-
-UUID=<uuid> /secret ext4 defults 0 0 
-
-cryptsetup luksDump /dev/vdb1
-
-cryptsetup lukheaderBackup /dev/vdb1
-
-dmsetup ls --target crypt
-
 
 If you have trouble closing the luks secure file system, try: cryptsetup luksClose <friendly name>
 
 The password key file must NOT contain any trailing characters:
 
 echo -n <password> > /root/luks_key; chmod 400 /root/luks_key
+
+
+  my_devmapper_name /dev/vdaN /path/to/key/file
+
+First field is the name the encrypted volume will be called in /dev/mapper
+
+Second Field: The path to the *existing* encrypted block device.  This can be storage or a local image file
+
+3rd:  Path to the file that contains the password
+                       
+
+Then /etc/fstab
+
+    /dev/mapper/crypt_name /mounted/path  ext4 defaults 0 0  # crypt_name comes from either /etc/crypttab or the name you give it when you do luksOpen
+    UUID=<uuid> /mounted/path ext4 defults 0 0 
+
+cryptsetup luksDump /dev/vdb1  # Show the keyslot and other information
+
+cryptsetup lukheaderBackup /dev/vdb1 # Dump the key slot passwords to file.  you must know at least one key password
+
+dmsetup ls --target crypt
+
 
 ## Troubleshooting iSCSI Storage Issues
 

@@ -76,7 +76,7 @@ https://access.redhat.com/labs/
 
 Use 'man pmval' or 'man pcp' to find the PCPIntro man page reference.
 
-'pcp' by itself will show you what settings are set.
+'pcp' by itself will show you what settings are set.  PCP takes metrics every second.
 
 When copying log files to another system, ensure you also copy the .meta files from /var/log/pcp......
 
@@ -143,12 +143,18 @@ auditctl -D <deletes all rules>
 USE 'service auditd restart' and not 'systemctl restart auditd'
 Also use 'systemctl daemon-reload'
 
+Convert epoc date into  human-readable date:
+
+date --date=@<epoc date number>
+
 # Chapter 3:  Troubleshooting Boot Issues
 
 Grub2 is in /boot/grub2
 /boot/grub2/grub.cfg << do not edit.
 /etc/grub.d/  - config files
 /etc/default/grub - this is where edits are made.
+
+Don't forget that you can use <TAB> to do auto-completion at the grub2 boot menu stuff.
 
 lsblk
 
@@ -277,9 +283,9 @@ yum -y install cryptsetup
 
 If you have trouble closing the luks secure file system, try: cryptsetup luksClose <friendly name>
 
-The password key file must NOT contain any trailing characters:
+The password key file must NOT contain any trailing characters.  You may have to escape out fancy characters like the BANG character.
 
-echo -n <password> > /root/luks_key; chmod 400 /root/luks_key
+echo -n <password> > /root/luks_key; chmod 600 /root/luks_key
 
 
   my_devmapper_name /dev/vdaN /path/to/key/file
@@ -318,6 +324,9 @@ Any change to iscsid.conf:  restart iscsi service.
 
 CHAP protocol:  Password authentication for target connection.  By default, RH iscsi uses no authentication.  CHAP must be configured on the target and initiatior.  Authentication settings are in /etc/iscsi/iscsid.conf.  For one-way authentication, use 'username' and 'password' credentials.  For two-way authentication, use 'username_in' and 'password_in'.
 
+If you happen to connect with CHAP and a user/password, you'll have to remove the CHAP from /var/lib/iscsi/node/<whatever> manually, fix /etc/iscsi/iscsid.conf, restart iscsid and then re-login in to the LUN.  Simply turning off CHAP isn't enough to get login to work; you  must remove the auth name and password, too.
+
+
 discovery.sendtargets.auth.authmethod = CHAP
 discovery.sendtargets.auth.username = <username>
 discovery.sendtargets.auth.password = <password>
@@ -333,6 +342,7 @@ iscsiadm -m node -d8 # debug 8 is required to see authentication info
 
 iscsiadm -m node -u # Unlogin
 iscsiadm -m node -T <iqdn> -o delete # delete client side cache/information
+iscsiadm -m node -o delete # delete ALL cache
 
 iscsiadm --mode node --logoutall=all
 

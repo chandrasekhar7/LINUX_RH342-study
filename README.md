@@ -369,6 +369,7 @@ rpmdb_dump
 rpmdb_verify
 
     cd /var/lib/rpm
+    lsof | grep /var/lib/rpm # Ensure nobody's using these files
     rm /var/lib/rpm/__db.*
     /usr/lib/rpm/rpmdb_verify Packages
     mv Packages Packages.broken
@@ -539,7 +540,9 @@ If running stap modules on a different server, make sure the kernel versions mat
 man stap | grep -A 100 ALSO # shows you the 'stap-prep' program that installs everything it needs.
 
 
-stap -v /usr/share/doc/systemtap-client-*/examples/process/syscalls_by_proc.stp
+stap -v /usr/share/doc/systemtap-client-*/examples/process/syscalls_by_proc.stp  OR
+stap -v /usr/share/systemtap/examples/process # on Centoshistory | grep stap
+
 System Tap:
 
 you need kernel-debuginfo and kernel-devel and system tap dependencies packages installed to use system tap.

@@ -34,7 +34,7 @@ journalctl -b -1 (show messages from last boot)
 
 'man journalctl' will lead you to 'man systemd-journald.service' page that gives you clues on how to make the storage persistent for logging.
 
-Instead of manually creating the /var/log/journal directory, one can also change the systemd-journald configuration file:
+Instead of manually creating the /var/log/journal directory, one can also change the systemd-journald configuration file.  "man journalctl" gives a hint at where the journal config file is (look at end of man page).  "man journald.conf" and then searching for "persistent" demonstrates how to set up persistent journaling.  "man journald.conf" also shows the systemctl service you need to restart.
 
 Raw
 
@@ -73,6 +73,9 @@ https://access.redhat.com/labs/
     yum -y install pcp-doc # man pages
     (rpm -qil pcp | grep systemd gives hints to the service name)
     firewall-cmd --add-service=cockpit --permanent
+    
+PCP uses TCP/9090
+    
 
 Use 'man pmval' or 'man pcp' to find the PCPIntro man page reference.
 
